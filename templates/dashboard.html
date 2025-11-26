@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="JARM - AI-Powered Task Management System with Real-time Process Monitoring">
+    <meta name="keywords" content="AI, Task Management, Process Monitoring, System Analytics, Dashboard">
+    <meta name="author" content="JARM Development Team">
+    <title>JARM - AI Task Management System</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="{{ url_for('static', filename='css/dashboard.css') }}" as="style">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    
+    <!-- Modern Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Socket.IO Client for Real-Time Updates -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js" integrity="sha512-zoJXRvW2gC8Z0Xo3lBbao5+AS3g6YWr5ztKqaWd2+a/vP2dEu41B2naCXivktgq2Go+VjOQA0VaSJITX5Y7UWgw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body class="loading">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loader">
+            <div class="loader-inner">
+                <div class="loader-line-wrap">
+                    <div class="loader-line"></div>
+                </div>
+                <div class="loader-line-wrap">
+                    <div class="loader-line"></div>
+                </div>
+                <div class="loader-line-wrap">
+                    <div class="loader-line"></div>
+                </div>
+            </div>
+        </div>
+        <h3>Loading JARM Dashboard...</h3>
+    </div>
+    
+    <!-- Main App -->
+    <div class="app-container" id="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="brand-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="brand-text">
+                        <h2>JARM</h2>
+                        <span>AI Task Management</span>
+                    </div>
+                </div>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3 class="nav-title">Main</h3>
+                    <a href="/" class="nav-item active" data-section="dashboard">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="analytics">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="monitoring">
+                        <i class="fas fa-desktop"></i>
+                        <span>System Monitor</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <h3 class="nav-title">Tools</h3>
+                    <a href="#" class="nav-item" data-section="alerts">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Alerts</span>
+                        <span class="nav-badge" id="alerts-badge">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="processes">
+                        <i class="fas fa-cogs"></i>
+                        <span>Processes</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="application-history">
+                        <i class="fas fa-history"></i>
+                        <span>App History</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <h3 class="nav-title">Settings</h3>
+                    <a href="#" class="nav-item" data-section="preferences">
+                        <i class="fas fa-cog"></i>
+                        <span>Preferences</span>
+                    </a>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="system-status-mini">
+                    <div class="status-indicator" id="sidebar-status">
+                        <div class="status-dot status-stopped"></div>
+                        <span id="sidebar-status-text">System Stopped</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" id="mobile-menu-btn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="page-title">
+                        <h1 id="page-title">Dashboard</h1>
+                        <p id="page-subtitle">System overview and real-time monitoring</p>
+                    </div>
+                </div>
+                
+                <div class="header-right">
+                    <div class="header-controls">
+                        <button class="header-btn" id="refresh-btn" title="Refresh Data">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        
+                        <div class="dropdown" id="settings-dropdown">
+                            <button class="header-btn dropdown-toggle" id="settings-btn" title="Settings">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                            <div class="dropdown-menu">
+                                <div class="dropdown-section">
+                                    <h4>Refresh Settings</h4>
+                                    <div class="setting-item">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="auto-refresh-toggle" checked>
+                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-label">Auto Refresh</span>
+                                        </label>
+                                    </div>
+                                    <div class="setting-item">
+                                        <label for="refresh-rate">Refresh Rate</label>
+                                        <select id="refresh-rate" class="select-input">
+                                            <option value="1000">1 second</option>
+                                            <option value="2000">2 seconds</option>
+                                            <option value="5000">5 seconds</option>
+                                            <option value="10000">10 seconds</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="dropdown-section">
+                                    <h4>Alerts</h4>
+                                    <div class="setting-item">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="audio-alert-toggle" checked>
+                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-label">Audio Alerts</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- Theme toggle removed -->
+                            </div>
+                        </div>
+                        
+                        <div class="system-status-header">
+                            <div class="status-pill" id="system-status-pill">
+                                <div class="status-dot status-stopped"></div>
+                                <span id="system-status-text">System Stopped</span>
+                            </div>
+                            <div class="connection-status" id="connection-status" title="Connection Status">
+                                <div class="connection-dot disconnected"></div>
+                                <span class="connection-text">Polling</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Content Area -->
+            <div class="content-wrapper">
+                
+                <!-- Dashboard Section -->
+                <section id="dashboard-section" class="content-section active">
+                    <!-- System Control Panel - Full Width at Top -->
+                    <div class="control-panel">
+                        <div class="control-card">
+                            <h3>
+                                <i class="fas fa-power-off"></i>
+                                System Control
+                            </h3>
+                            <div class="control-buttons">
+                                <button id="start-btn" class="btn btn-success btn-lg">
+                                    <i class="fas fa-play"></i>
+                                    Start Monitoring
+                                </button>
+                                <button id="stop-btn" class="btn btn-outline btn-lg">
+                                    <i class="fas fa-stop"></i>
+                                    Stop Monitoring
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- KPI Status Cards - Single Row -->
+                    <div class="metrics-overview">
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <i class="fas fa-microchip"></i>
+                                <h4>CPU Usage</h4>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-value" id="cpu-metric">0%</div>
+                                <div class="metric-chart">
+                                    <div class="progress-ring">
+                                        <svg width="60" height="60">
+                                            <circle class="progress-ring-bg" cx="30" cy="30" r="26"></circle>
+                                            <circle class="progress-ring-fill" cx="30" cy="30" r="26" id="cpu-progress"></circle>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <i class="fas fa-memory"></i>
+                                <h4>Memory Usage</h4>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-value" id="memory-metric">0%</div>
+                                <div class="metric-chart">
+                                    <div class="progress-ring">
+                                        <svg width="60" height="60">
+                                            <circle class="progress-ring-bg" cx="30" cy="30" r="26"></circle>
+                                            <circle class="progress-ring-fill" cx="30" cy="30" r="26" id="memory-progress"></circle>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <i class="fas fa-database"></i>
+                                <h4>Data Points</h4>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-value" id="datapoints-metric">0</div>
+                                <div class="metric-trend" id="datapoints-trend">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span>+0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <i class="fas fa-bell"></i>
+                                <h4>Active Alerts</h4>
+                            </div>
+                            <div class="metric-content">
+                                <div class="metric-value" id="alerts-metric">0</div>
+                                <div class="metric-status" id="alerts-status">
+                                    <span class="status-badge status-success">All Clear</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Second Row - Three Equal Cards -->
+                    <div class="dashboard-grid">
+                        <!-- System Metrics Detail -->
+                        <div class="card" id="metrics-card">
+                            <div class="card-header">
+                                <h3>
+                                    <i class="fas fa-chart-line"></i>
+                                    System Metrics
+                                </h3>
+                                <div class="card-actions">
+                                    <div class="time-info">
+                                        <span class="time-label">Last updated:</span>
+                                        <span id="metrics-last-updated">—</span>
+                                    </div>
+                                    <div class="time-info">
+                                        <span class="time-label">System time:</span>
+                                        <span id="system-clock">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="metrics-content">
+                                    <div class="loading-state">
+                                        <div class="spinner"></div>
+                                        <span>Loading metrics...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="export-controls">
+                                    <label for="mysql-export-hours" class="input-group">
+                                        <span class="input-label">Hours:</span>
+                                        <input id="mysql-export-hours" type="number" min="1" max="168" value="24" class="input-sm" />
+                                    </label>
+                                    <button id="download-metrics-db-btn" class="btn btn-outline">
+                                        <i class="fas fa-download"></i>
+                                        Download MySQL Export
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Active Alerts -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Active Alerts
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="alerts-content">
+                                    <div class="loading-state">
+                                        <div class="spinner"></div>
+                                        <span>Loading alerts...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="pagination-controls">
+                                    <button id="alerts-prev" class="btn btn-sm" disabled>
+                                        <i class="fas fa-chevron-left"></i>
+                                        Prev
+                                    </button>
+                                    <span id="alerts-page-info" class="page-info">Page 1</span>
+                                    <button id="alerts-next" class="btn btn-sm" disabled>
+                                        Next
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notifications -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>
+                                    <i class="fas fa-bell"></i>
+                                    Notifications
+                                </h3>
+                                <div class="card-actions">
+                                    <button id="mark-all-read-btn" class="btn btn-sm btn-outline">
+                                        <i class="fas fa-check-double"></i>
+                                        Mark All as Read
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="notifications-content">
+                                    <div class="loading-state">
+                                        <div class="spinner"></div>
+                                        <span>Loading notifications...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="pagination-controls">
+                                    <button id="notifications-prev" class="btn btn-sm" disabled>
+                                        <i class="fas fa-chevron-left"></i>
+                                        Prev
+                                    </button>
+                                    <span id="notifications-page-info" class="page-info">Page 1</span>
+                                    <button id="notifications-next" class="btn btn-sm" disabled>
+                                        Next
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Process Monitor Table - Full Width -->
+                    <div class="card full-width">
+                        <div class="card-header">
+                            <h3>
+                                <i class="fas fa-cogs"></i>
+                                Process Monitor
+                            </h3>
+                            <div class="card-actions">
+                                <div class="input-group">
+                                    <label for="pid-input" class="input-label">PID:</label>
+                                    <input id="pid-input" type="number" min="0" placeholder="Enter PID" class="input-sm" />
+                                    <button id="open-files-btn" class="btn btn-sm">
+                                        <i class="fas fa-folder-open"></i>
+                                        Load Files
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="processes-content">
+                                <div class="loading-state">
+                                    <div class="spinner"></div>
+                                    <span>Loading processes...</span>
+                                </div>
+                            </div>
+                            <div id="open-files-content" class="open-files-section"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Process Monitoring Charts - Full Width -->
+                    <div class="card full-width">
+                        <div class="card-header">
+                            <h3>
+                                <i class="fas fa-chart-bar"></i>
+                                Process Monitoring Charts
+                            </h3>
+                            <div class="card-actions">
+                                <div class="chart-controls">
+                                    <button id="chart-bar-btn" class="btn btn-sm btn-chart active" data-chart-type="bar">
+                                        <i class="fas fa-chart-bar"></i>
+                                        Top Processes
+                                    </button>
+                                    <button id="chart-gauge-btn" class="btn btn-sm btn-chart" data-chart-type="gauge">
+                                        <i class="fas fa-tachometer-alt"></i>
+                                        System Usage
+                                    </button>
+                                    <button id="chart-pie-btn" class="btn btn-sm btn-chart" data-chart-type="pie">
+                                        <i class="fas fa-chart-pie"></i>
+                                        Process Distribution
+                                    </button>
+                                    <button id="chart-line-btn" class="btn btn-sm btn-chart" data-chart-type="line">
+                                        <i class="fas fa-chart-line"></i>
+                                        Historical Trends
+                                    </button>
+                                </div>
+                                <div class="refresh-controls">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="auto-refresh-charts" checked>
+                                        <span class="toggle-slider"></span>
+                                        <span class="toggle-label">Auto Refresh</span>
+                                    </label>
+                                    <button id="refresh-charts-btn" class="btn btn-sm">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="charts-container">
+                                <!-- Bar Chart for Top Processes -->
+                                <div id="bar-chart-container" class="chart-container active">
+                                    <div class="chart-header">
+                                        <h4>Top 10 Processes by Memory Usage</h4>
+                                        <div class="chart-info">
+                                            <span id="bar-chart-last-updated">Last updated: —</span>
+                                        </div>
+                                    </div>
+                                    <div class="chart-wrapper">
+                                        <canvas id="processes-bar-chart" width="800" height="400"></canvas>
+                                    </div>
+                                </div>
+                                
+                                <!-- Gauge Charts for System Usage -->
+                                <div id="gauge-chart-container" class="chart-container">
+                                    <div class="chart-header">
+                                        <h4>Real-Time System Usage</h4>
+                                        <div class="chart-info">
+                                            <span id="gauge-chart-last-updated">Last updated: —</span>
+                                        </div>
+                                    </div>
+                                    <div class="gauge-charts-grid">
+                                        <div class="gauge-item">
+                                            <h5>CPU Usage</h5>
+                                            <div class="gauge-wrapper">
+                                                <canvas id="cpu-gauge-chart" width="200" height="200"></canvas>
+                                            </div>
+                                            <div class="gauge-value" id="cpu-gauge-value">0%</div>
+                                        </div>
+                                        <div class="gauge-item">
+                                            <h5>Memory Usage</h5>
+                                            <div class="gauge-wrapper">
+                                                <canvas id="memory-gauge-chart" width="200" height="200"></canvas>
+                                            </div>
+                                            <div class="gauge-value" id="memory-gauge-value">0%</div>
+                                        </div>
+                                        <div class="gauge-item">
+                                            <h5>Active Processes</h5>
+                                            <div class="gauge-wrapper">
+                                                <canvas id="processes-gauge-chart" width="200" height="200"></canvas>
+                                            </div>
+                                            <div class="gauge-value" id="processes-gauge-value">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Pie Chart for Process Distribution -->
+                                <div id="pie-chart-container" class="chart-container">
+                                    <div class="chart-header">
+                                        <h4>Process Distribution by Type</h4>
+                                        <div class="chart-info">
+                                            <span id="pie-chart-last-updated">Last updated: —</span>
+                                        </div>
+                                    </div>
+                                    <div class="pie-charts-grid">
+                                        <div class="pie-item">
+                                            <h5>Memory Usage Distribution</h5>
+                                            <div class="pie-wrapper">
+                                                <canvas id="memory-pie-chart" width="300" height="300"></canvas>
+                                            </div>
+                                        </div>
+                                        <div class="pie-item">
+                                            <h5>CPU Usage Distribution</h5>
+                                            <div class="pie-wrapper">
+                                                <canvas id="cpu-pie-chart" width="300" height="300"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Line Chart for Historical Trends -->
+                                <div id="line-chart-container" class="chart-container">
+                                    <div class="chart-header">
+                                        <h4>Historical System Metrics</h4>
+                                        <div class="chart-info">
+                                            <select id="time-range-selector" class="select-input">
+                                                <option value="1">Last Hour</option>
+                                                <option value="24" selected>Last 24 Hours</option>
+                                                <option value="168">Last Week</option>
+                                            </select>
+                                            <span id="line-chart-last-updated">Last updated: —</span>
+                                        </div>
+                                    </div>
+                                    <div class="chart-wrapper">
+                                        <canvas id="metrics-line-chart" width="800" height="400"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Analytics Section -->
+                <section id="analytics-section" class="content-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>
+                                <i class="fas fa-chart-pie"></i>
+                                Analytics
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="analytics-content-alt">
+                                <div class="loading-state">
+                                    <div class="spinner"></div>
+                                    <span>Loading analytics...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Monitoring Section -->
+                <section id="monitoring-section" class="content-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>
+                                <i class="fas fa-desktop"></i>
+                                System Monitor
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="metrics-overview">
+                                <div class="metric-card">
+                                    <div class="metric-header">
+                                        <i class="fas fa-microchip"></i>
+                                        <h4>CPU Usage</h4>
+                                    </div>
+                                    <div class="metric-content">
+                                        <div class="metric-value" id="cpu-metric-alt">0%</div>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-header">
+                                        <i class="fas fa-memory"></i>
+                                        <h4>Memory Usage</h4>
+                                    </div>
+                                    <div class="metric-content">
+                                        <div class="metric-value" id="memory-metric-alt">0%</div>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-header">
+                                        <i class="fas fa-chart-area"></i>
+                                        <h4>Data Points</h4>
+                                    </div>
+                                    <div class="metric-content">
+                                        <div class="metric-value" id="datapoints-metric-alt">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="processes-content-alt">
+                                <div class="loading-state">
+                                    <div class="spinner"></div>
+                                    <span>Loading processes...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Application History Section -->
+                <section id="application-history-section" class="content-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>
+                                <i class="fas fa-history"></i>
+                                Application History
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="application-history-content">
+                                <div class="loading-state">
+                                    <div class="spinner"></div>
+                                    <span>Loading application history...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>  
+            </div>
+        </main>
+    </div>
+
+    </div>
+    
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Modal Title</h3>
+                <button class="modal-close" id="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                Modal content goes here
+            </div>
+            <div class="modal-footer" id="modal-footer">
+                <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="modal-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <!-- JavaScript files -->
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    
+    <!-- Initialize App -->
+    <script>
+        // Remove loading screen after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                document.body.classList.remove('loading');
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('app-container').style.opacity = '1';
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

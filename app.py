@@ -1,6 +1,7 @@
 import os
 import threading
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 from flask import Flask, request, jsonify, render_template, Response, stream_with_context
 from flask_cors import CORS
@@ -11,7 +12,7 @@ try:
 except Exception:
     PollingObserver = None
 from watchdog.events import FileSystemEventHandler
-import eventlet
+# import eventlet
 from sqlalchemy import text
 
 # Set up logging`
@@ -31,7 +32,7 @@ CORS(app)
 app.config['SECRET_KEY'] = Config.SECRET_KEY
 
 # Initialize SocketIO for real-time updates
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Initialize database and agents
 db_manager = DatabaseManager(Config)
@@ -553,11 +554,11 @@ def start_monitoring():
                         })
                 
                 # Sleep for a short interval (real-time updates)
-                eventlet.sleep(1)  # Update every second
+                time.sleep(1)  # Update every second
                 
             except Exception as e:
                 logger.error(f"Error in enhanced monitoring loop: {e}")
-                eventlet.sleep(5)
+                time.sleep(5)
 
     # Start background learning process
     def learning_loop():
@@ -580,10 +581,10 @@ def start_monitoring():
                     reward = 0.5 if decision['action'].value == 'WARN' else 0.0
                     learning_agent.learn_from_experience(state, action, reward, state)
 
-                eventlet.sleep(60)  # Learn every minute
+                time.sleep(60)  # Learn every minute
             except Exception as e:
                 logger.error(f"Error in learning loop: {e}")
-                eventlet.sleep(60)
+                time.sleep(60)
 
     # Start both monitoring threads
     monitoring_thread = threading.Thread(target=enhanced_monitoring_loop)
@@ -1136,11 +1137,11 @@ def real_time_monitoring_loop():
                     })
             
             # Sleep for a short interval (real-time updates)
-            eventlet.sleep(1)  # Update every second
+            time.sleep(1)  # Update every second
             
         except Exception as e:
             logger.error(f"Error in real-time monitoring loop: {e}")
-            eventlet.sleep(5)  # Wait longer on error
+            time.sleep(5)  # Wait longer on error
 
 # =============================================================================
 # HEALTH & DIAGNOSTICS
